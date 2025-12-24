@@ -114,7 +114,6 @@ COUNTRY_NAMES = {
 
 
 def language_label_from_locale(locale: str) -> str:
-    """'en-US' -> 'English (United States)'."""
     if not locale:
         return "Unknown"
     parts = locale.split("-")
@@ -128,7 +127,6 @@ def language_label_from_locale(locale: str) -> str:
 
 
 def clean_voice_name(short_name: str) -> str:
-    """'en-US-AndrewMultilingualNeural' -> 'Andrew'."""
     if not short_name:
         return "Voice"
     name_token = short_name.split("-")[-1]
@@ -143,7 +141,6 @@ def style_from_short_name(short_name: str) -> str:
 
 @st.cache_data(show_spinner=False)
 def load_voices():
-    """Fetch and cache voice list."""
     voices = asyncio.run(edge_tts.list_voices())
     voices = sorted(voices, key=lambda v: v.get("ShortName", ""))
     return voices
@@ -201,7 +198,7 @@ if not voices_data:
 
 left_col, right_col = st.columns([1.1, 0.9])
 
-# --- Left: Script ---
+# Placeholder so button code baad me likhein lekin dikhe text ke neeche
 with left_col:
     st.markdown('<div class="tts-section-title">SCRIPT</div>', unsafe_allow_html=True)
     script = st.text_area(
@@ -211,8 +208,8 @@ with left_col:
         placeholder="Paste your script here...",
         label_visibility="collapsed",
     )
+    button_container = st.container()  # yahi pe button dikhana hai
 
-# --- Right: Voice settings ---
 with right_col:
     st.markdown(
         '<div class="tts-section-title">VOICE SETTINGS</div>',
@@ -296,13 +293,12 @@ with right_col:
     with pitch_col:
         pitch = st.slider("Pitch", -20, 20, 0, step=2)
 
-# ---------- Generate & output (button moved up & centered) ----------
+# ---------- Generate button (shown under text box) ----------
 
-st.markdown("<div style='margin-top: 0.8rem;'></div>", unsafe_allow_html=True)
-
-btn_left, btn_center, btn_right = st.columns([1, 1, 1])
-with btn_center:
+with button_container:
     generate = st.button("Generate audio", type="primary", use_container_width=True)
+
+# ---------- Output ----------
 
 if generate:
     if not script.strip():
