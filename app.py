@@ -1,5 +1,6 @@
 import asyncio
 import re
+import time  # for timing
 
 import edge_tts
 import streamlit as st
@@ -177,6 +178,8 @@ if "tts_audio" not in st.session_state:
     st.session_state["tts_audio"] = None
 if "tts_filename" not in st.session_state:
     st.session_state["tts_filename"] = "output.mp3"
+if "generation_time" not in st.session_state:
+    st.session_state["generation_time"] = None  # total seconds (float)
 
 
 # ---------- Header ----------
@@ -309,14 +312,17 @@ with button_container:
     generate = st.button("Generate audio", type="primary", use_container_width=True)
 
 
-# ---------- Output ----------
+# ---------- Output + timing ----------
 
 if generate:
     if not script.strip():
         st.error("Please enter some text first.")
     else:
+        start_time = time.perf_counter()
         with st.spinner("Creating your audio..."):
             audio_bytes = tts_to_bytes(script, selected_short_name, rate, pitch)
+        end_time = time.perf_counter()
+        st.session_state["generation_time"] = end_time - start_time
 
         if not audio_bytes:
             st.error("Something went wrong while generating audio. Please try again.")
@@ -335,3 +341,10 @@ if st.session_state["tts_audio"]:
         mime="audio/mpeg",
         key="download_button_persistent",
     )
+
+    if st.session_state["generation_time"] is not None:
+        total_seconds = int(st.session_state["generation_time"])
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+        formatted = f"{minutes:02d}:{seconds:02d}"
+        st.caption(f"Generation time: {formatted} (mm:ss)")
