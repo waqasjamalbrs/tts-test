@@ -296,7 +296,10 @@ with right_col:
 # ---------- Generate button (shown under text box) ----------
 
 with button_container:
+    # yahan se distance control hoga
+    st.markdown("<div style='height: 0.75rem;'></div>", unsafe_allow_html=True)
     generate = st.button("Generate audio", type="primary", use_container_width=True)
+
 
 # ---------- Output ----------
 
