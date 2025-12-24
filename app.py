@@ -5,7 +5,7 @@ import edge_tts
 import streamlit as st
 
 
-# ---------- Page & global styling ----------
+# ---------- Page config & basic styling ----------
 
 st.set_page_config(page_title="Text to Speech Studio", page_icon="🎙️")
 
@@ -23,7 +23,7 @@ st.markdown(
 
     .tts-header {
         text-align: center;
-        margin-bottom: 2.0rem;
+        margin-bottom: 2rem;
     }
     .tts-title {
         font-size: 2.2rem;
@@ -37,12 +37,14 @@ st.markdown(
     }
 
     .tts-card {
-        padding: 1.6rem 1.9rem;
-        border-radius: 1.2rem;
+        padding: 1.4rem 1.6rem;
+        border-radius: 1.1rem;
         border: 1px solid #e5e7eb;
         background: #ffffff;
         box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        margin-bottom: 1.2rem;
     }
+
     .tts-section-title {
         font-size: 0.9rem;
         text-transform: uppercase;
@@ -51,30 +53,13 @@ st.markdown(
         color: #9ca3af;
         margin-bottom: 0.6rem;
     }
+
     .tts-voice-help {
         font-size: 0.8rem;
         color: #9ca3af;
-        margin-top: 0.25rem;
+        margin-top: 0.3rem;
     }
 
-    /* ---- Script area tweaks ---- */
-    /* Streamlit text_area outer wrapper (white capsule) */
-    div[data-testid="stTextArea"] > div:nth-of-type(1) {
-        display: none !important;    /* sabun daani COMPLETELY hide */
-    }
-    /* Actual textarea styling */
-    div[data-testid="stTextArea"] textarea {
-        border-radius: 0.9rem !important;
-        background: #f3f4f6 !important;
-    }
-    div[data-testid="stTextArea"] label {
-        display: none !important;
-    }
-
-    /* Sliders & primary button */
-    .stSlider > div[data-baseweb="slider"] {
-        padding-top: 0.4rem;
-    }
     .stButton>button {
         border-radius: 999px;
         padding: 0.55rem 1.6rem;
@@ -94,8 +79,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-# ---------- Helpers for voices ----------
+# ---------- Voice helpers ----------
 
 LANGUAGE_NAMES = {
     "af": "Afrikaans",
@@ -138,6 +122,7 @@ COUNTRY_NAMES = {
 
 
 def language_label_from_locale(locale: str) -> str:
+    """'en-US' -> 'English (United States)'."""
     if not locale:
         return "Unknown"
     parts = locale.split("-")
@@ -151,6 +136,7 @@ def language_label_from_locale(locale: str) -> str:
 
 
 def clean_voice_name(short_name: str) -> str:
+    """'en-US-AndrewMultilingualNeural' -> 'Andrew'."""
     if not short_name:
         return "Voice"
     name_token = short_name.split("-")[-1]
@@ -165,6 +151,7 @@ def style_from_short_name(short_name: str) -> str:
 
 @st.cache_data(show_spinner=False)
 def load_voices():
+    """Fetch and cache voice list."""
     voices = asyncio.run(edge_tts.list_voices())
     voices = sorted(voices, key=lambda v: v.get("ShortName", ""))
     return voices
@@ -197,7 +184,7 @@ if "tts_filename" not in st.session_state:
     st.session_state["tts_filename"] = "output.mp3"
 
 
-# ---------- Layout ----------
+# ---------- Header ----------
 
 st.markdown(
     """
@@ -211,35 +198,23 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# ---------- Load voices ----------
+
 voices_data = load_voices()
 if not voices_data:
     st.error("No voices are available at the moment. Please try again later.")
     st.stop()
 
+# ---------- Card 1: Voice & Language ----------
+
 with st.container():
     st.markdown('<div class="tts-card">', unsafe_allow_html=True)
+    st.markdown('<div class="tts-section-title">VOICE & LANGUAGE</div>', unsafe_allow_html=True)
 
-    left_col, right_col = st.columns([1.2, 0.8])
+    col_l, col_r = st.columns(2)
 
-    # --- Script ---
-    with left_col:
-        st.markdown('<div class="tts-section-title">SCRIPT</div>', unsafe_allow_html=True)
-        script = st.text_area(
-            "Script",
-            "Hello, this is a sample script. Replace this text with your own content.",
-            height=260,
-            placeholder="Paste your script here...",
-            label_visibility="collapsed",
-        )
-
-    # --- Voice settings ---
-    with right_col:
-        st.markdown(
-            '<div class="tts-section-title">VOICE SETTINGS</div>',
-            unsafe_allow_html=True,
-        )
-
-        # Language filter
+    # --- Language & gender selection ---
+    with col_l:
         label_to_locale = {}
         for v in voices_data:
             loc = v.get("Locale")
@@ -264,6 +239,8 @@ with st.container():
         genders = sorted({v.get("Gender", "") for v in voices_data if v.get("Gender")})
         gender_choice = st.selectbox("Gender", ["Any"] + genders, index=0)
 
+    # --- Voice dropdown & sliders ---
+    with col_r:
         filtered = voices_data
         if language_choice != "All languages":
             selected_locale = label_to_locale[language_choice]
@@ -287,7 +264,7 @@ with st.container():
             style = style_from_short_name(short)
             lang_label = language_label_from_locale(locale)
 
-            label = f"{base_name} ({style}) - {lang_label}"
+            label = f"{base_name} ({style}) · {lang_label}"
             if gender:
                 label += f" · {gender}"
 
@@ -306,7 +283,7 @@ with st.container():
         selected_short_name = shortname_by_label[selected_voice_label]
 
         st.markdown(
-            '<div class="tts-voice-help">Fine-tune speed and pitch for subtle variations.</div>',
+            '<div class="tts-voice-help">Adjust speed and pitch for subtle variations.</div>',
             unsafe_allow_html=True,
         )
 
@@ -318,32 +295,45 @@ with st.container():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+# ---------- Card 2: Script + Output ----------
 
-# ---------- Generate & output ----------
+with st.container():
+    st.markdown('<div class="tts-card">', unsafe_allow_html=True)
+    st.markdown('<div class="tts-section-title">SCRIPT</div>', unsafe_allow_html=True)
 
-generate = st.button("Generate audio", type="primary")
-
-if generate:
-    if not script.strip():
-        st.error("Please enter some text first.")
-    else:
-        with st.spinner("Creating your audio..."):
-            audio_bytes = tts_to_bytes(script, selected_short_name, rate, pitch)
-
-        if not audio_bytes:
-            st.error("Something went wrong while generating audio. Please try again.")
-        else:
-            st.session_state["tts_audio"] = audio_bytes
-            st.session_state["tts_filename"] = (
-                f"{clean_voice_name(selected_short_name)}.mp3"
-            )
-
-if st.session_state["tts_audio"]:
-    st.audio(st.session_state["tts_audio"], format="audio/mp3")
-    st.download_button(
-        "Download MP3",
-        data=st.session_state["tts_audio"],
-        file_name=st.session_state["tts_filename"],
-        mime="audio/mpeg",
-        key="download_button_persistent",
+    script = st.text_area(
+        "Script",
+        "Hello, this is a sample script. Replace this text with your own content.",
+        height=260,
+        placeholder="Paste your script here...",
+        label_visibility="collapsed",
     )
+
+    generate = st.button("Generate audio", type="primary")
+
+    if generate:
+        if not script.strip():
+            st.error("Please enter some text first.")
+        else:
+            with st.spinner("Creating your audio..."):
+                audio_bytes = tts_to_bytes(script, selected_short_name, rate, pitch)
+
+            if not audio_bytes:
+                st.error("Something went wrong while generating audio. Please try again.")
+            else:
+                st.session_state["tts_audio"] = audio_bytes
+                st.session_state["tts_filename"] = (
+                    f"{clean_voice_name(selected_short_name)}.mp3"
+                )
+
+    if st.session_state["tts_audio"]:
+        st.audio(st.session_state["tts_audio"], format="audio/mp3")
+        st.download_button(
+            "Download MP3",
+            data=st.session_state["tts_audio"],
+            file_name=st.session_state["tts_filename"],
+            mime="audio/mpeg",
+            key="download_button_persistent",
+        )
+
+    st.markdown("</div>", unsafe_allow_html=True)
