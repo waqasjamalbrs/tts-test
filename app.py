@@ -20,6 +20,7 @@ st.markdown(
         padding-bottom: 2.5rem;
         max-width: 960px;
     }
+
     .tts-header {
         text-align: center;
         margin-bottom: 2.0rem;
@@ -34,13 +35,13 @@ st.markdown(
         font-size: 0.95rem;
         color: #6c757d;
     }
+
     .tts-card {
         padding: 1.6rem 1.9rem;
-        border-radius: 1.25rem;
+        border-radius: 1.2rem;
         border: 1px solid #e5e7eb;
-        background: #ffffffcc;
-        backdrop-filter: blur(12px);
-        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.10);
+        background: #ffffff;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
     }
     .tts-section-title {
         font-size: 0.9rem;
@@ -55,15 +56,16 @@ st.markdown(
         color: #9ca3af;
         margin-top: 0.25rem;
     }
-    /* Script area */
+
+    /* ---- Script area tweaks ---- */
+    .stTextArea label {
+        display: none !important;   /* label row (white bar) completely hide */
+    }
     .stTextArea textarea {
         border-radius: 0.9rem !important;
     }
-    /* Make selectboxes rounded, but don't mess with layout width */
-    .stSelectbox > div[data-baseweb="select"] {
-        border-radius: 999px !important;
-    }
-    /* Sliders & button */
+
+    /* Sliders & primary button */
     .stSlider > div[data-baseweb="slider"] {
         padding-top: 0.4rem;
     }
@@ -229,7 +231,7 @@ with st.container():
             value="Hello, this is a sample script. Replace this text with your own content.",
             height=260,
             placeholder="Paste your script here...",
-            label_visibility="collapsed",  # hide Streamlit's built-in label -> no weird bar
+            label_visibility="collapsed",  # label row hidden (no white bar)
         )
 
     # --- Right: voice & controls ---
