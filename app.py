@@ -55,18 +55,21 @@ st.markdown(
         color: #9ca3af;
         margin-top: 0.25rem;
     }
+    /* Script area */
     .stTextArea textarea {
         border-radius: 0.9rem !important;
     }
-    .stSelectbox > div > div {
+    /* Make selectboxes rounded, but don't mess with layout width */
+    .stSelectbox > div[data-baseweb="select"] {
         border-radius: 999px !important;
     }
+    /* Sliders & button */
     .stSlider > div[data-baseweb="slider"] {
-        padding-top: 0.6rem;
+        padding-top: 0.4rem;
     }
     .stButton>button {
         border-radius: 999px;
-        padding: 0.55rem 1.4rem;
+        padding: 0.55rem 1.6rem;
         background: linear-gradient(135deg, #4f46e5, #7c3aed);
         color: white;
         border: none;
@@ -220,18 +223,19 @@ with st.container():
 
     # --- Left: script ---
     with left_col:
-        st.markdown('<div class="tts-section-title">Script</div>', unsafe_allow_html=True)
+        st.markdown('<div class="tts-section-title">SCRIPT</div>', unsafe_allow_html=True)
         script = st.text_area(
-            "",
-            "Hello, this is a sample script. Replace this text with your own content.",
+            label="Script",
+            value="Hello, this is a sample script. Replace this text with your own content.",
             height=260,
             placeholder="Paste your script here...",
+            label_visibility="collapsed",  # hide Streamlit's built-in label -> no weird bar
         )
 
     # --- Right: voice & controls ---
     with right_col:
         st.markdown(
-            '<div class="tts-section-title">Voice settings</div>',
+            '<div class="tts-section-title">VOICE SETTINGS</div>',
             unsafe_allow_html=True,
         )
 
@@ -318,29 +322,29 @@ with st.container():
 
 # ---------- Generate & persistent output ----------
 
-col_center = st.container()
-with col_center:
-    generate = st.button("Generate audio", type="primary")
+generate = st.button("Generate audio", type="primary")
 
-    if generate:
-        if not script.strip():
-            st.error("Please enter some text first.")
+if generate:
+    if not script.strip():
+        st.error("Please enter some text first.")
+    else:
+        with st.spinner("Creating your audio..."):
+            audio_bytes = tts_to_bytes(script, selected_short_name, rate, pitch)
+
+        if not audio_bytes:
+            st.error("Something went wrong while generating audio. Please try again.")
         else:
-            with st.spinner("Creating your audio..."):
-                audio_bytes = tts_to_bytes(script, selected_short_name, rate, pitch)
+            st.session_state["tts_audio"] = audio_bytes
+            st.session_state["tts_filename"] = (
+                f"{clean_voice_name(selected_short_name)}.mp3"
+            )
 
-            if not audio_bytes:
-                st.error("Something went wrong while generating audio. Please try again.")
-            else:
-                st.session_state["tts_audio"] = audio_bytes
-                st.session_state["tts_filename"] = f"{clean_voice_name(selected_short_name)}.mp3"
-
-    if st.session_state["tts_audio"]:
-        st.audio(st.session_state["tts_audio"], format="audio/mp3")
-        st.download_button(
-            "Download MP3",
-            data=st.session_state["tts_audio"],
-            file_name=st.session_state["tts_filename"],
-            mime="audio/mpeg",
-            key="download_button_persistent",
-        )
+if st.session_state["tts_audio"]:
+    st.audio(st.session_state["tts_audio"], format="audio/mp3")
+    st.download_button(
+        "Download MP3",
+        data=st.session_state["tts_audio"],
+        file_name=st.session_state["tts_filename"],
+        mime="audio/mpeg",
+        key="download_button_persistent",
+    )
