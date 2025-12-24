@@ -58,20 +58,17 @@ st.markdown(
     }
 
     /* ---- Script area tweaks ---- */
-    /* Wrapper div jo white pill bana raha tha */
-    .stTextArea > div {
-        background: transparent !important;
-        box-shadow: none !important;
-        border-radius: 0 !important;
-        padding: 0 !important;
+    /* Streamlit text_area outer wrapper (white capsule) */
+    div[data-testid="stTextArea"] > div:nth-of-type(1) {
+        display: none !important;    /* sabun daani COMPLETELY hide */
     }
-    /* Actual textarea */
-    .stTextArea textarea {
+    /* Actual textarea styling */
+    div[data-testid="stTextArea"] textarea {
         border-radius: 0.9rem !important;
         background: #f3f4f6 !important;
     }
-    .stTextArea label {
-        display: none !important;   /* label row hide */
+    div[data-testid="stTextArea"] label {
+        display: none !important;
     }
 
     /* Sliders & primary button */
@@ -173,7 +170,9 @@ def load_voices():
     return voices
 
 
-async def tts_to_bytes_async(text: str, voice: str, rate: int = 0, pitch: int = 0) -> bytes:
+async def tts_to_bytes_async(
+    text: str, voice: str, rate: int = 0, pitch: int = 0
+) -> bytes:
     if not text.strip():
         return b""
     rate_str = f"{rate:+d}%"
