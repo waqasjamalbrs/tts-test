@@ -5,7 +5,7 @@ import edge_tts
 import streamlit as st
 
 
-# ---------- Page config & basic styling ----------
+# ---------- Page config & light styling ----------
 
 st.set_page_config(page_title="Text to Speech Studio", page_icon="🎙️")
 
@@ -34,15 +34,6 @@ st.markdown(
     .tts-subtitle {
         font-size: 0.95rem;
         color: #6c757d;
-    }
-
-    .tts-card {
-        padding: 1.4rem 1.6rem;
-        border-radius: 1.1rem;
-        border: 1px solid #e5e7eb;
-        background: #ffffff;
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-        margin-bottom: 1.2rem;
     }
 
     .tts-section-title {
@@ -78,6 +69,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
 
 # ---------- Voice helpers ----------
 
@@ -205,102 +197,13 @@ if not voices_data:
     st.error("No voices are available at the moment. Please try again later.")
     st.stop()
 
-# ---------- Card 1: Voice & Language ----------
+# ---------- Main 2-column layout ----------
 
-with st.container():
-    st.markdown('<div class="tts-card">', unsafe_allow_html=True)
-    st.markdown('<div class="tts-section-title">VOICE & LANGUAGE</div>', unsafe_allow_html=True)
+left_col, right_col = st.columns([1.1, 0.9])
 
-    col_l, col_r = st.columns(2)
-
-    # --- Language & gender selection ---
-    with col_l:
-        label_to_locale = {}
-        for v in voices_data:
-            loc = v.get("Locale")
-            if not loc:
-                continue
-            label = language_label_from_locale(loc)
-            label_to_locale[label] = loc
-
-        language_labels = sorted(label_to_locale.keys())
-        default_lang_index = (
-            language_labels.index("English (United States)") + 1
-            if "English (United States)" in language_labels
-            else 0
-        )
-
-        language_choice = st.selectbox(
-            "Language",
-            ["All languages"] + language_labels,
-            index=default_lang_index,
-        )
-
-        genders = sorted({v.get("Gender", "") for v in voices_data if v.get("Gender")})
-        gender_choice = st.selectbox("Gender", ["Any"] + genders, index=0)
-
-    # --- Voice dropdown & sliders ---
-    with col_r:
-        filtered = voices_data
-        if language_choice != "All languages":
-            selected_locale = label_to_locale[language_choice]
-            filtered = [v for v in filtered if v.get("Locale") == selected_locale]
-        if gender_choice != "Any":
-            filtered = [v for v in filtered if v.get("Gender") == gender_choice]
-
-        if not filtered:
-            st.warning("No voices match the current filters.")
-            st.markdown("</div>", unsafe_allow_html=True)
-            st.stop()
-
-        voice_labels = []
-        shortname_by_label = {}
-        for v in filtered:
-            short = v.get("ShortName", "")
-            locale = v.get("Locale", "")
-            gender = v.get("Gender", "")
-
-            base_name = clean_voice_name(short)
-            style = style_from_short_name(short)
-            lang_label = language_label_from_locale(locale)
-
-            label = f"{base_name} ({style}) · {lang_label}"
-            if gender:
-                label += f" · {gender}"
-
-            voice_labels.append(label)
-            shortname_by_label[label] = short
-
-        default_index = 0
-        for i, label in enumerate(voice_labels):
-            if "Andrew" in label:
-                default_index = i
-                break
-
-        selected_voice_label = st.selectbox(
-            "Voice", voice_labels, index=default_index, key="voice_select"
-        )
-        selected_short_name = shortname_by_label[selected_voice_label]
-
-        st.markdown(
-            '<div class="tts-voice-help">Adjust speed and pitch for subtle variations.</div>',
-            unsafe_allow_html=True,
-        )
-
-        rate_col, pitch_col = st.columns(2)
-        with rate_col:
-            rate = st.slider("Speed", -40, 40, 0, step=5)
-        with pitch_col:
-            pitch = st.slider("Pitch", -20, 20, 0, step=2)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ---------- Card 2: Script + Output ----------
-
-with st.container():
-    st.markdown('<div class="tts-card">', unsafe_allow_html=True)
+# --- Left: Script ---
+with left_col:
     st.markdown('<div class="tts-section-title">SCRIPT</div>', unsafe_allow_html=True)
-
     script = st.text_area(
         "Script",
         "Hello, this is a sample script. Replace this text with your own content.",
@@ -309,31 +212,116 @@ with st.container():
         label_visibility="collapsed",
     )
 
-    generate = st.button("Generate audio", type="primary")
+# --- Right: Voice settings ---
+with right_col:
+    st.markdown(
+        '<div class="tts-section-title">VOICE SETTINGS</div>',
+        unsafe_allow_html=True,
+    )
 
-    if generate:
-        if not script.strip():
-            st.error("Please enter some text first.")
+    # Language + gender filters
+    label_to_locale = {}
+    for v in voices_data:
+        loc = v.get("Locale")
+        if not loc:
+            continue
+        label = language_label_from_locale(loc)
+        label_to_locale[label] = loc
+
+    language_labels = sorted(label_to_locale.keys())
+    default_lang_index = (
+        language_labels.index("English (United States)") + 1
+        if "English (United States)" in language_labels
+        else 0
+    )
+
+    language_choice = st.selectbox(
+        "Language",
+        ["All languages"] + language_labels,
+        index=default_lang_index,
+    )
+
+    genders = sorted({v.get("Gender", "") for v in voices_data if v.get("Gender")})
+    gender_choice = st.selectbox("Gender", ["Any"] + genders, index=0)
+
+    filtered = voices_data
+    if language_choice != "All languages":
+        selected_locale = label_to_locale[language_choice]
+        filtered = [v for v in filtered if v.get("Locale") == selected_locale]
+    if gender_choice != "Any":
+        filtered = [v for v in filtered if v.get("Gender") == gender_choice]
+
+    if not filtered:
+        st.warning("No voices match the current filters.")
+        st.stop()
+
+    # Build voice dropdown
+    voice_labels = []
+    shortname_by_label = {}
+    for v in filtered:
+        short = v.get("ShortName", "")
+        locale = v.get("Locale", "")
+        gender = v.get("Gender", "")
+
+        base_name = clean_voice_name(short)
+        style = style_from_short_name(short)
+        lang_label = language_label_from_locale(locale)
+
+        label = f"{base_name} ({style}) · {lang_label}"
+        if gender:
+            label += f" · {gender}"
+
+        voice_labels.append(label)
+        shortname_by_label[label] = short
+
+    default_index = 0
+    for i, label in enumerate(voice_labels):
+        if "Andrew" in label:
+            default_index = i
+            break
+
+    selected_voice_label = st.selectbox(
+        "Voice", voice_labels, index=default_index, key="voice_select"
+    )
+    selected_short_name = shortname_by_label[selected_voice_label]
+
+    st.markdown(
+        '<div class="tts-voice-help">Adjust speed and pitch for subtle variations.</div>',
+        unsafe_allow_html=True,
+    )
+
+    rate_col, pitch_col = st.columns(2)
+    with rate_col:
+        rate = st.slider("Speed", -40, 40, 0, step=5)
+    with pitch_col:
+        pitch = st.slider("Pitch", -20, 20, 0, step=2)
+
+# ---------- Generate & output ----------
+
+st.write("")  # small spacing
+generate = st.button("Generate audio", type="primary")
+
+if generate:
+    if not script.strip():
+        st.error("Please enter some text first.")
+    else:
+        with st.spinner("Creating your audio..."):
+            audio_bytes = tts_to_bytes(script, selected_short_name, rate, pitch)
+
+        if not audio_bytes:
+            st.error("Something went wrong while generating audio. Please try again.")
         else:
-            with st.spinner("Creating your audio..."):
-                audio_bytes = tts_to_bytes(script, selected_short_name, rate, pitch)
+            st.session_state["tts_audio"] = audio_bytes
+            st.session_state["tts_filename"] = (
+                f"{clean_voice_name(selected_short_name)}.mp3"
+            )
 
-            if not audio_bytes:
-                st.error("Something went wrong while generating audio. Please try again.")
-            else:
-                st.session_state["tts_audio"] = audio_bytes
-                st.session_state["tts_filename"] = (
-                    f"{clean_voice_name(selected_short_name)}.mp3"
-                )
-
-    if st.session_state["tts_audio"]:
-        st.audio(st.session_state["tts_audio"], format="audio/mp3")
-        st.download_button(
-            "Download MP3",
-            data=st.session_state["tts_audio"],
-            file_name=st.session_state["tts_filename"],
-            mime="audio/mpeg",
-            key="download_button_persistent",
-        )
-
-    st.markdown("</div>", unsafe_allow_html=True)
+if st.session_state["tts_audio"]:
+    st.audio(st.session_state["tts_audio"], format="audio/mp3")
+    st.download_button(
+        "Download MP3",
+        data=st.session_state["tts_audio"],
+        file_name=st.session_state["tts_filename"],
+        mime="audio/mpeg",
+        key="download_button_persistent",
+    )
