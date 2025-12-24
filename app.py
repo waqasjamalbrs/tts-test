@@ -53,7 +53,7 @@ st.markdown(
 
     .stButton>button {
         border-radius: 999px;
-        padding: 0.55rem 1.6rem;
+        padding: 0.55rem 1.8rem;
         background: linear-gradient(135deg, #4f46e5, #7c3aed);
         color: white;
         border: none;
@@ -255,7 +255,7 @@ with right_col:
         st.warning("No voices match the current filters.")
         st.stop()
 
-    # Build voice dropdown
+    # Voice dropdown
     voice_labels = []
     shortname_by_label = {}
     for v in filtered:
@@ -296,10 +296,13 @@ with right_col:
     with pitch_col:
         pitch = st.slider("Pitch", -20, 20, 0, step=2)
 
-# ---------- Generate & output ----------
+# ---------- Generate & output (button moved up & centered) ----------
 
-st.write("")  # small spacing
-generate = st.button("Generate audio", type="primary")
+st.markdown("<div style='margin-top: 0.8rem;'></div>", unsafe_allow_html=True)
+
+btn_left, btn_center, btn_right = st.columns([1, 1, 1])
+with btn_center:
+    generate = st.button("Generate audio", type="primary", use_container_width=True)
 
 if generate:
     if not script.strip():
