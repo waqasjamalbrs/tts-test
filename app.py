@@ -58,11 +58,20 @@ st.markdown(
     }
 
     /* ---- Script area tweaks ---- */
-    .stTextArea label {
-        display: none !important;   /* label row (white bar) completely hide */
+    /* Wrapper div jo white pill bana raha tha */
+    .stTextArea > div {
+        background: transparent !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
     }
+    /* Actual textarea */
     .stTextArea textarea {
         border-radius: 0.9rem !important;
+        background: #f3f4f6 !important;
+    }
+    .stTextArea label {
+        display: none !important;   /* label row hide */
     }
 
     /* Sliders & primary button */
@@ -132,14 +141,11 @@ COUNTRY_NAMES = {
 
 
 def language_label_from_locale(locale: str) -> str:
-    """Convert e.g. 'en-US' -> 'English (United States)'."""
     if not locale:
         return "Unknown"
-
     parts = locale.split("-")
     lang_code = parts[0]
     country_code = parts[1] if len(parts) > 1 else ""
-
     lang_name = LANGUAGE_NAMES.get(lang_code, lang_code)
     if country_code:
         country_name = COUNTRY_NAMES.get(country_code, country_code)
@@ -148,10 +154,8 @@ def language_label_from_locale(locale: str) -> str:
 
 
 def clean_voice_name(short_name: str) -> str:
-    """'en-US-AndrewMultilingualNeural' -> 'Andrew'."""
     if not short_name:
         return "Voice"
-
     name_token = short_name.split("-")[-1]
     name_token = re.sub(r"Neural$", "", name_token)
     name_token = re.sub(r"Multilingual$", "", name_token)
@@ -164,7 +168,6 @@ def style_from_short_name(short_name: str) -> str:
 
 @st.cache_data(show_spinner=False)
 def load_voices():
-    """Fetch and cache the full voice list."""
     voices = asyncio.run(edge_tts.list_voices())
     voices = sorted(voices, key=lambda v: v.get("ShortName", ""))
     return voices
@@ -173,17 +176,13 @@ def load_voices():
 async def tts_to_bytes_async(text: str, voice: str, rate: int = 0, pitch: int = 0) -> bytes:
     if not text.strip():
         return b""
-
     rate_str = f"{rate:+d}%"
     pitch_str = f"{pitch:+d}Hz"
-
     communicate = edge_tts.Communicate(text, voice, rate=rate_str, pitch=pitch_str)
-
     audio_data = b""
     async for chunk in communicate.stream():
         if chunk["type"] == "audio":
             audio_data += chunk["data"]
-
     return audio_data
 
 
@@ -191,7 +190,7 @@ def tts_to_bytes(text: str, voice: str, rate: int, pitch: int) -> bytes:
     return asyncio.run(tts_to_bytes_async(text, voice, rate, pitch))
 
 
-# ---------- Session state for persistent audio ----------
+# ---------- Session state ----------
 
 if "tts_audio" not in st.session_state:
     st.session_state["tts_audio"] = None
@@ -223,18 +222,18 @@ with st.container():
 
     left_col, right_col = st.columns([1.2, 0.8])
 
-    # --- Left: script ---
+    # --- Script ---
     with left_col:
         st.markdown('<div class="tts-section-title">SCRIPT</div>', unsafe_allow_html=True)
         script = st.text_area(
-            label="Script",
-            value="Hello, this is a sample script. Replace this text with your own content.",
+            "Script",
+            "Hello, this is a sample script. Replace this text with your own content.",
             height=260,
             placeholder="Paste your script here...",
-            label_visibility="collapsed",  # label row hidden (no white bar)
+            label_visibility="collapsed",
         )
 
-    # --- Right: voice & controls ---
+    # --- Voice settings ---
     with right_col:
         st.markdown(
             '<div class="tts-section-title">VOICE SETTINGS</div>',
@@ -270,7 +269,6 @@ with st.container():
         if language_choice != "All languages":
             selected_locale = label_to_locale[language_choice]
             filtered = [v for v in filtered if v.get("Locale") == selected_locale]
-
         if gender_choice != "Any":
             filtered = [v for v in filtered if v.get("Gender") == gender_choice]
 
@@ -319,10 +317,10 @@ with st.container():
         with pitch_col:
             pitch = st.slider("Pitch", -20, 20, 0, step=2)
 
-    st.markdown("</div>", unsafe_allow_html=True)  # close card
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ---------- Generate & persistent output ----------
+# ---------- Generate & output ----------
 
 generate = st.button("Generate audio", type="primary")
 
