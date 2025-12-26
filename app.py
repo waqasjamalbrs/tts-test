@@ -172,6 +172,16 @@ def tts_to_bytes(text: str, voice: str, rate: int, pitch: int) -> bytes:
     return asyncio.run(tts_to_bytes_async(text, voice, rate, pitch))
 
 
+def format_duration(seconds_float: float) -> str:
+    """Format a duration in seconds as MM:SS (e.g. 00:07, 01:25)."""
+    if seconds_float is None:
+        return "00:00"
+    total_seconds = int(seconds_float)
+    minutes = total_seconds // 60
+    seconds = total_seconds % 60
+    return f"{minutes:02d}:{seconds:02d}"
+
+
 # ---------- Session state ----------
 
 if "tts_audio" not in st.session_state:
@@ -221,7 +231,6 @@ with left_col:
     # Live text statistics (characters + word count)
     if script.strip():
         char_count = len(script)
-        # Split on whitespace; filter out empty chunks
         word_count = len([w for w in script.split() if w.strip()])
     else:
         char_count = 0
@@ -316,10 +325,9 @@ with right_col:
     with pitch_col:
         pitch = st.slider("Pitch", -20, 20, 0, step=2)
 
-# ---------- Generate button (shown under the text box + stats) ----------
+# ---------- Generate button (under the text box + stats) ----------
 
 with button_container:
-    # Controls the vertical spacing between the text area and the button
     st.markdown("<div style='height: 0.75rem;'></div>", unsafe_allow_html=True)
     generate = st.button("Generate audio", type="primary", use_container_width=True)
 
@@ -344,6 +352,7 @@ if generate:
                 f"{clean_voice_name(selected_short_name)}.mp3"
             )
 
+# Show audio + download + timing (after generation)
 if st.session_state["tts_audio"]:
     st.audio(st.session_state["tts_audio"], format="audio/mp3")
     st.download_button(
@@ -355,8 +364,5 @@ if st.session_state["tts_audio"]:
     )
 
     if st.session_state["generation_time"] is not None:
-        total_seconds = int(st.session_state["generation_time"])
-        minutes = total_seconds // 60
-        seconds = total_seconds % 60
-        formatted = f"{minutes:02d}:{seconds:02d}"
+        formatted = format_duration(st.session_state["generation_time"])
         st.caption(f"Generation time: {formatted} (mm:ss)")
