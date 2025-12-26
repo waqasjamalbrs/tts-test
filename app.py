@@ -207,7 +207,7 @@ if not voices_data:
 
 left_col, right_col = st.columns([1.1, 0.9])
 
-# Left column: script and button placeholder
+# Left column: script, text stats and button placeholder
 with left_col:
     st.markdown('<div class="tts-section-title">SCRIPT</div>', unsafe_allow_html=True)
     script = st.text_area(
@@ -217,7 +217,19 @@ with left_col:
         placeholder="Paste your script here...",
         label_visibility="collapsed",
     )
-    # Placeholder container so we can render the button later directly under the text area
+
+    # Live text statistics (characters + word count)
+    if script.strip():
+        char_count = len(script)
+        # Split on whitespace; filter out empty chunks
+        word_count = len([w for w in script.split() if w.strip()])
+    else:
+        char_count = 0
+        word_count = 0
+
+    st.caption(f"{char_count} characters • {word_count} words")
+
+    # Placeholder container so we can render the button directly under the text area + stats
     button_container = st.container()
 
 # Right column: voice settings
@@ -304,7 +316,7 @@ with right_col:
     with pitch_col:
         pitch = st.slider("Pitch", -20, 20, 0, step=2)
 
-# ---------- Generate button (shown under the text box) ----------
+# ---------- Generate button (shown under the text box + stats) ----------
 
 with button_container:
     # Controls the vertical spacing between the text area and the button
